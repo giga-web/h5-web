@@ -1,7 +1,7 @@
 /* 开源-组件 */
 import React from 'react';
 /* 自研-工具 */
-import { routesUrlMap } from '@/router';
+import { routes } from '@/router/config';
 
 class DynamicComponent extends React.Component {
   constructor(...args) {
@@ -23,10 +23,10 @@ class DynamicComponent extends React.Component {
   }
 
   load() {
-    const route = routesUrlMap[this.props.match.url];
+    const route = routes[this.props.match.url];
 
     if (!route) {
-      console.log(routesUrlMap);
+      console.log(routes);
       console.log(`route NotFound with ${this.props.match.url}`);
       return;
     }

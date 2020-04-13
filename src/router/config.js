@@ -1,103 +1,46 @@
-/* 自研-工具 */
-import { SYS_CSL_MST_MENU } from '@/constants/backend';
+/*
+'/': {
+  name: '首页',
+  chunkName: 'layoutsBaseLayout',
+  moduleId: './src/layouts/BaseLayout/index.js',
+  redirect: '',
+},
+*/
+
+export const routes = {
+  '/': { name: '首页', chunkName: 'layoutsBaseLayout', moduleId: './src/layouts/BaseLayout/index.js', redirect: '/dsb/workspace' },
+  '/auth': { name: '认证', chunkName: 'layoutsAuthLayout', moduleId: './src/layouts/AuthLayout/index.js', redirect: '/auth/login' },
+  '/auth/login': { name: '登录', chunkName: 'authLogin', moduleId: './src/pages/auth/Login/index.js' },
+  '/dsb/workspace': { name: '工作台', chunkName: 'dsbWorkplace', moduleId: './src/pages/dsb/Workplace/index.js' },
+};
 
 
 // ============================================================
-// 布局
-export const layoutRouters = [
-  {
-    "id": 99,
-    "parentId": 1,
-    "name": "首页",
-    "url": "/",
-    "chunkName": "layoutsBaseLayout",
-    "moduleId": "./src/layouts/BaseLayout/index.js",
-    "icon": "",
-    "redirect": "",
-    "type": "layout"
-  },
-  {
-    "id": 88,
-    "parentId": 1,
-    "name": "认证",
-    "url": "/auth",
-    "chunkName": "layoutsAuthLayout",
-    "moduleId": "./src/layouts/AuthLayout/index.js",
-    "icon": "",
-    "redirect": "",
-    "type": "layout"
-  },
-];
-// ============================================================
+export const routeTree = [];
+
+Object.keys(routes).forEach(url => {
+
+  if (['/', '/auth'].includes(url)) {
+    // 根节点
+    routeTree.push({ url, ...routes[url] });
+
+  } else {
+    console.log(urlToList(url));
 
 
-// ============================================================
-// 临时菜单路由
-export const tempMenus = [
-  {
-    "id": 9999,
-    "parentId": 99,
-    "name": "看板",
-    "url": "",
-    "chunkName": "",
-    "moduleId": "",
-    "icon": "menudashboard",
-    "redirect": "",
-    "type": "module"
-  },
-  {
-    "id": 999901,
-    "parentId": 9999,
-    "name": "工作台",
-    "url": "/dsb/workspace",
-    "chunkName": "dsbWorkplace",
-    "moduleId": "./src/pages/dsb/Workplace/index.js",
-    "icon": "",
-    "redirect": "",
-    "type": "menu"
-  },
-];
-// ============================================================
-
-
-// ============================================================
-// 非菜单路由
-export const nonMenuRouters = [
-  {
-    "id": 8888,
-    "parentId": 88,
-    "name": '登录',
-    "url": '/auth/login',
-    "chunkName": "authLogin",
-    "moduleId": "./src/pages/auth/Login/index.js",
-    "icon": "",
-    "redirect": "",
-    "type": "page"
-  },
-];
-// ============================================================
-
-
-// ============================================================
-// 服务端菜单路由
-export function getServerMenus () {
-  let serverMenus = [];
-
-  try {
-    const storageMenu = JSON.parse(localStorage.getItem(SYS_CSL_MST_MENU));
-    if (storageMenu !== null) { serverMenus = storageMenu; }
-  } catch(e) {
-    console.log(e);
   }
 
-  return serverMenus;
-}
-// ============================================================
+});
 
 
 // ============================================================
-// 全部路由
-export default function getRouters () {
-  return getServerMenus().concat(layoutRouters).concat(tempMenus).concat(nonMenuRouters);
+// url转列表
+// /dsb/workspace -> ["/dsb", "/dsb/workspace"]
+function urlToList(url) {
+  const list = url.split("/").filter(i => i);
+
+  return list.map((item, index) => {
+    return `/${list.slice(0, index + 1).join("/")}`;
+  });
 }
 // ============================================================
