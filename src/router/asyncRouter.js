@@ -1,32 +1,31 @@
 /* 开源-组件 */
 import React from 'react';
 /* 自研-工具 */
-import { routes } from '@/router/config';
+import { routeMap } from '@/router/routes';
 
 class DynamicComponent extends React.Component {
-  constructor(...args) {
-    super(...args);
+
+  constructor(props) {
+    super(props);
 
     this.state = {
-      AsyncRouter: null,
-      isNotFound: false,
+      status: 0,
     };
+
+    this.routeData = null;
   }
 
   componentDidMount() {
-    this.mounted = true;
-    this.load();
-  }
-
-  componentWillUnmount() {
-    this.mounted = false;
+    if (this.state.status === 0) {
+      this.load();
+    }
   }
 
   load() {
-    const route = routes[this.props.match.url];
+    const route = routeMap[this.props.match.url];
 
     if (!route) {
-      console.log(routes);
+      console.log(routeMap);
       console.log(`route NotFound with ${this.props.match.url}`);
       return;
     }
@@ -39,30 +38,42 @@ class DynamicComponent extends React.Component {
     // TODO：现在是依赖 webpack compliation plugin
     __webpack_require__.e(route.chunkName).then(() => {
       const m = __webpack_require__(route.moduleId);
-      const AsyncRouter = m.default || m;
-      if (this.mounted) {
-        this.setState({ AsyncRouter });
-      } else {
-        this.state.AsyncRouter = AsyncRouter; // eslint-disable-line
-      }
+
+      // 保存路由数据
+      this.routeData = m.default || m;
+
+      // 改变状态，更新页面
+      this.setState({ status: 1 });
+
     }).catch((ex) => {
       console.log(ex);
-      this.setState({ isNotFound: true });
+
+      // 改变状态，更新页面
+      this.setState({ status: 2 });
     });
   }
 
   render() {
-    const { AsyncRouter, isNotFound } = this.state;
+    const { status } = this.state;
 
-    if (isNotFound) return <div>404</div>;
+    // 加载中
+    if (status === 0) {
+      return (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          loading...
+        </div>
+      );
+    }
 
-    if (AsyncRouter) return <AsyncRouter {...this.props} />;
+    // 加载成功
+    if (status === 1) {
+      return (<this.routeData {...this.props} />);
+    }
 
-    return (
-      <div style={{ textAlign: 'center', padding: '20px' }}>
-        loading...
-      </div>
-    );
+    // 加载失败
+    if (status === 2) {
+      return (<div>404</div>);
+    }
   }
 }
 

@@ -7,7 +7,7 @@ import { history } from 'dva';
 import asyncRouter from '@/router/asyncRouter';
 import Exception404 from '@/pages/error/http/404';
 /* 路由-配置 */
-import { routeTree } from './config';
+import { routeTree } from '@/router/routes';
 
 // ============================================================
 // 递归生成路由
