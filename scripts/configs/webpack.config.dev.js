@@ -15,7 +15,6 @@ const InterpolateHtmlPlugin = require('../utilities/InterpolateHtmlPlugin');
 // 开源-插件
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-
 module.exports = {
   mode: 'development',
   devtool: 'cheap-module-source-map',
@@ -40,20 +39,24 @@ module.exports = {
     // 替换新 html 文件中的变量
     new InterpolateHtmlPlugin(HtmlWebpackPlugin, {
       PUBLIC_URL: '',
-      VERSION_TIME: new Date().getTime()
+      VERSION_TIME: new Date().getTime(),
     }),
 
     // 基于 html 模板生成新的 html 文件
     new HtmlWebpackPlugin({
       template: paths.IndexHtml,
-      chunks: ['index']
+      chunks: ['index'],
     }),
 
     // 忽略moment的语言包，默认会加载所有语言包
     new webpack.IgnorePlugin({
       resourceRegExp: /^\.\/locale$/,
-      contextRegExp: /moment$/
+      contextRegExp: /moment$/,
     }),
+
+    // 设置环境变量信息
+    // 参考：https://webpack.docschina.org/plugins/environment-plugin/#src/components/Sidebar/Sidebar.jsx
+    new webpack.EnvironmentPlugin(['NODE_ENV', 'REACT_APP_ENV']),
   ],
   module: {
     rules: [
@@ -62,10 +65,8 @@ module.exports = {
         exclude: /(node_modules|bower_components)/,
         use: {
           loader: 'babel-loader',
-          options: {
-            
-          }
-        }
+          options: {},
+        },
       },
       {
         test: /\.tsx?$/,
@@ -73,9 +74,7 @@ module.exports = {
         use: [
           {
             loader: 'babel-loader',
-            options: {
-
-            },
+            options: {},
           },
           {
             loader: 'ts-loader',
@@ -100,16 +99,14 @@ module.exports = {
             loader: 'css-loader',
             options: {
               importLoaders: 2,
-            }
+            },
           },
           {
             loader: 'postcss-loader',
             options: {
               ident: 'postcss',
-              plugins: (loader) => [
-                require('postcss-preset-env')(),
-              ]
-            }
+              plugins: loader => [require('postcss-preset-env')()],
+            },
           },
           {
             loader: 'less-loader',
@@ -136,16 +133,14 @@ module.exports = {
               modules: {
                 localIdentName: '[path][name]__[local]--[hash:base64:5]',
               },
-            }
+            },
           },
           {
             loader: 'postcss-loader',
             options: {
               ident: 'postcss',
-              plugins: (loader) => [
-                require('postcss-preset-env')(),
-              ]
-            }
+              plugins: loader => [require('postcss-preset-env')()],
+            },
           },
           {
             loader: 'less-loader',
@@ -160,33 +155,25 @@ module.exports = {
       },
       {
         test: /\.(png|svg|jpg|gif)$/,
-        use: [
-          'file-loader',
-        ],
+        use: ['file-loader'],
       },
       {
         test: /\.(woff|woff2|eot|ttf|otf)$/,
-        use: [
-          'file-loader',
-        ],
+        use: ['file-loader'],
       },
       {
         test: /\.(csv|tsv)$/,
-        use: [
-          'csv-loader',
-        ],
+        use: ['csv-loader'],
       },
       {
         test: /\.xml$/,
-        use: [
-          'xml-loader',
-        ],
+        use: ['xml-loader'],
       },
-    ]
+    ],
   },
   optimization: {
     splitChunks: {
-      chunks: (chunk) => {
+      chunks: chunk => {
         return false;
       },
       cacheGroups: {
@@ -203,9 +190,9 @@ module.exports = {
           },
           */
           name: 'vendors',
-          chunks: 'all'
-        }
-      }
-    }
-  }
+          chunks: 'all',
+        },
+      },
+    },
+  },
 };

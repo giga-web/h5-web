@@ -17,17 +17,18 @@ const { onEffect, extraReducers } = Loading();
 const takeEvery = sagaEffects.takeEvery;
 const takeLatest = sagaEffects.takeLatest;
 const throttle = sagaEffects.throttle;
-const takeOldest = (pattern, saga, ...args) => sagaEffects.fork(function*() {
-  let lastTask
-  while (true) {
-    const action = yield sagaEffects.take(pattern)
-    if (lastTask) {
-      break;
+const takeOldest = (pattern, saga, ...args) =>
+  sagaEffects.fork(function*() {
+    let lastTask;
+    while (true) {
+      const action = yield sagaEffects.take(pattern);
+      if (lastTask) {
+        break;
+      }
+      lastTask = yield sagaEffects.call(saga, ...args.concat(action));
+      lastTask = undefined;
     }
-    lastTask = yield sagaEffects.call(saga, ...args.concat(action))
-    lastTask = undefined;
-  }
-});
+  });
 
 // 变量
 const NAMESPACE_SEP = '/';
@@ -35,13 +36,13 @@ const NAMESPACE_SEP = '/';
 // 函数
 const isArray = Array.isArray.bind(Array);
 const isFunction = o => typeof o === 'function';
-const isAllFunction = (obj) => Object.keys(obj).every(key => isFunction(obj[key]));
+const isAllFunction = obj => Object.keys(obj).every(key => isFunction(obj[key]));
 const noop = () => {};
 
 const onError = (err, extension) => {
   if (err) {
     if (typeof err === 'string') {
-      err = new Error(err)
+      err = new Error(err);
     }
     err.preventDefault = () => {
       err._dontReject = true;
@@ -64,36 +65,35 @@ const prefix = function prefix(obj, namespace, type) {
     memo[newKey] = obj[key];
     return memo;
   }, {});
-}
+};
 
 const prefixType = function prefixType(type, model) {
   const prefixedType = `${model.namespace}${NAMESPACE_SEP}${type}`;
   const typeWithoutAffix = prefixedType.replace(/\/@@[^/]+?$/, '');
-  if ((model.reducers && model.reducers[typeWithoutAffix])
-    || (model.effects && model.effects[typeWithoutAffix])) {
+  if ((model.reducers && model.reducers[typeWithoutAffix]) || (model.effects && model.effects[typeWithoutAffix])) {
     return prefixedType;
   }
   return type;
-}
+};
 
 const prefixedDispatch = function prefixedDispatch(dispatch, model) {
-  return (action) => {
+  return action => {
     const { type } = action;
     invariant(type, 'dispatch: action should be a plain Object with type');
     warning(
       type.indexOf(`${model.namespace}${NAMESPACE_SEP}`) !== 0,
-      `dispatch: ${type} should not be prefixed with namespace ${model.namespace}`,
+      `dispatch: ${type} should not be prefixed with namespace ${model.namespace}`
     );
     return dispatch({ ...action, type: prefixType(type, model) });
   };
-}
+};
 
 const getReducer = function getReducer(model) {
   const reducers = model.reducers || {};
   const stateDefault = model.state;
 
   return (state = stateDefault, action) => {
-    const handlers = Object.keys(reducers).map((type) => {
+    const handlers = Object.keys(reducers).map(type => {
       const actionType = type;
       return (state, action) => {
         const { type } = action;
@@ -109,11 +109,11 @@ const getReducer = function getReducer(model) {
       return r(p, action);
     }, state);
   };
-}
+};
 
 // getSaga start
 const getSaga = function getSaga(model) {
-  return function* () {
+  return function*() {
     for (const key in model.effects) {
       if (Object.prototype.hasOwnProperty.call(model.effects, key)) {
         const watcher = getWatcher(key, model.effects[key], model);
@@ -125,7 +125,7 @@ const getSaga = function getSaga(model) {
       }
     }
   };
-}
+};
 
 function getWatcher(key, Effect, model) {
   let effect = Effect;
@@ -139,10 +139,7 @@ function getWatcher(key, Effect, model) {
     if (opts && opts.type) {
       type = opts.type;
       if (type === 'throttle') {
-        invariant(
-          opts.ms,
-          'start: opts.ms should be defined if type is throttle'
-        );
+        invariant(opts.ms, 'start: opts.ms should be defined if type is throttle');
         ms = opts.ms;
       }
     }
@@ -177,8 +174,7 @@ function getWatcher(key, Effect, model) {
   }
 
   function* sagaWithCatch(...args) {
-    const { __dva_resolve: resolve = noop, __dva_reject: reject = noop } =
-      args.length > 0 ? args[0] : {};
+    const { __dva_resolve: resolve = noop, __dva_reject: reject = noop } = args.length > 0 ? args[0] : {};
 
     try {
       yield sagaEffects.put({ type: `${key}${NAMESPACE_SEP}@@start` });
@@ -199,14 +195,14 @@ function createEffects(model) {
     const { type } = action;
     assertAction(type, 'sagaEffects.put');
     return sagaEffects.put({ ...action, type: prefixType(type, model) });
-  }
+  };
 
   put.resolve = function putResolve(action) {
     // https://github.com/redux-saga/redux-saga/issues/336
     const { type } = action;
     assertAction(type, 'sagaEffects.put.resolve');
     return sagaEffects.put.resolve({ ...action, type: prefixType(type, model) });
-  }
+  };
 
   const take = function take(type) {
     if (typeof type === 'string') {
@@ -225,7 +221,7 @@ function createEffects(model) {
     } else {
       return sagaEffects.take(type);
     }
-  }
+  };
 
   return { ...sagaEffects, put, take };
 
@@ -233,9 +229,7 @@ function createEffects(model) {
     invariant(type, 'dispatch: action should be a plain Object with type');
     warning(
       type.indexOf(`${model.namespace}${NAMESPACE_SEP}`) !== 0,
-      `[${name}] ${type} should not be prefixed with namespace ${
-        model.namespace
-      }`
+      `[${name}] ${type} should not be prefixed with namespace ${model.namespace}`
     );
   }
 }
@@ -247,19 +241,18 @@ function applyOnEffect(fn, effect, model, key) {
 // getSaga end
 
 const addSyncModel = function addSyncModel(m) {
+  // 重复时直接返回
+  if (m && modelsEx.some(t => t.namespace === m.namespace)) {
+    return;
+  }
+
   const { namespace, reducers, effects, subscriptions } = m;
 
   if (process.env.NODE_ENV !== 'production') {
     // namespace 必须被定义
-    invariant(
-      namespace,
-      `addSyncModel namespace should be defined`,
-    );
+    invariant(namespace, `addSyncModel namespace should be defined`);
     // 并且是字符串
-    invariant(
-      typeof namespace === 'string',
-      `addSyncModel namespace should be string, but got ${typeof namespace}`,
-    );
+    invariant(typeof namespace === 'string', `addSyncModel namespace should be string, but got ${typeof namespace}`);
     // 并且唯一
     // invariant(
     //   !modelsEx.some(m => m.namespace === namespace),
@@ -269,32 +262,26 @@ const addSyncModel = function addSyncModel(m) {
     if (reducers) {
       invariant(
         isPlainObject(reducers) || isArray(reducers),
-        `addSyncModel reducers should be plain object or array, but got ${typeof reducers}`,
+        `addSyncModel reducers should be plain object or array, but got ${typeof reducers}`
       );
       // 数组的 reducers 必须是 [Object, Function] 的格式
       invariant(
         !isArray(reducers) || (isPlainObject(reducers[0]) && isFunction(reducers[1])),
-        `addSyncModel reducers with array should be [Object, Function]`,
+        `addSyncModel reducers with array should be [Object, Function]`
       );
     }
     // effects 可以为空，PlainObject
     if (effects) {
-      invariant(
-        isPlainObject(effects),
-        `addSyncModel effects should be plain object, but got ${typeof effects}`,
-      );
+      invariant(isPlainObject(effects), `addSyncModel effects should be plain object, but got ${typeof effects}`);
     }
     if (subscriptions) {
       // subscriptions 可以为空，PlainObject
       invariant(
         isPlainObject(subscriptions),
-        `addSyncModel subscriptions should be plain object, but got ${typeof subscriptions}`,
+        `addSyncModel subscriptions should be plain object, but got ${typeof subscriptions}`
       );
       // subscription 必须为函数
-      invariant(
-        isAllFunction(subscriptions),
-        `addSyncModel subscription should be function`,
-      );
+      invariant(isAllFunction(subscriptions), `addSyncModel subscription should be function`);
     }
   }
 
@@ -316,9 +303,9 @@ const addSyncModel = function addSyncModel(m) {
   }
 
   modelsEx.push(m);
-  
+
   return m;
-}
+};
 
 const addAsyncModel = function addAsyncModel(m) {
   m = addSyncModel(m);
@@ -333,9 +320,9 @@ const addAsyncModel = function addAsyncModel(m) {
   if (m.subscriptions) {
     unlisteners[m.namespace] = runSubscription(m.subscriptions, m, patchHistory);
   }
-}
+};
 
-const unlistenSubscription = function unlistenSubscription (namespace) {
+const unlistenSubscription = function unlistenSubscription(namespace) {
   if (!unlisteners[namespace]) {
     return;
   }
@@ -344,7 +331,7 @@ const unlistenSubscription = function unlistenSubscription (namespace) {
 
   warning(
     nonFuncs.length === 0,
-    `[removeModel] subscription should return unlistener function, check these subscriptions ${nonFuncs.join(', ')}`,
+    `[removeModel] subscription should return unlistener function, check these subscriptions ${nonFuncs.join(', ')}`
   );
 
   for (const unlistener of funcs) {
@@ -352,13 +339,13 @@ const unlistenSubscription = function unlistenSubscription (namespace) {
   }
 
   delete unlisteners[namespace];
-}
+};
 
 // 目前这个方法不应该使用，会有问题
 // 就算你 CANCEL_EFFECTS 了 saga，saga 中的数据依然存在
 // 他会影响 store 中的 inputState，而产生报错（虽然只在开发环境报错）
 // 目前使用 clean 来做数据的清理
-const removeModel = function removeModel (namespace) {
+const removeModel = function removeModel(namespace) {
   // Delete reducers
   delete store.asyncReducers[namespace];
   delete reducers[namespace];
@@ -383,10 +370,13 @@ const runSubscription = function runSubscription(subs, model, patchHistory) {
   for (const key in subs) {
     if (Object.prototype.hasOwnProperty.call(subs, key)) {
       const sub = subs[key];
-      const unlistener = sub({
-        dispatch: prefixedDispatch(store.dispatch, model),
-        history: patchHistory,
-      }, onError);
+      const unlistener = sub(
+        {
+          dispatch: prefixedDispatch(store.dispatch, model),
+          history: patchHistory
+        },
+        onError
+      );
       if (isFunction(unlistener)) {
         funcs.push(unlistener);
       } else {
@@ -396,14 +386,12 @@ const runSubscription = function runSubscription(subs, model, patchHistory) {
   }
 
   return { funcs, nonFuncs };
-}
-
-
+};
 
 const history = createHashHistory();
 const patchHistory = (function patchHistory(history) {
   const oldListen = history.listen;
-  history.listen = function patchListen (callback) {
+  history.listen = function patchListen(callback) {
     callback(history.location);
     return oldListen.call(history, callback);
   };
@@ -420,8 +408,8 @@ addSyncModel({
   reducers: {
     UPDATE(state) {
       return state + 1;
-    },
-  },
+    }
+  }
 });
 
 // 加载全部 models
@@ -450,8 +438,8 @@ for (const m of modelsEx) {
 // 所有 redux 中间件
 const sagaMiddleware = createSagaMiddleware();
 const promiseMiddleware = () => {
-  return (next) => {
-    return (action) => {
+  return next => {
+    return action => {
       const { type } = action;
 
       if (isEffect(type)) {
@@ -459,7 +447,7 @@ const promiseMiddleware = () => {
           next({
             __dva_resolve: resolve,
             __dva_reject: reject,
-            ...action,
+            ...action
           });
         });
       } else {
@@ -479,10 +467,10 @@ const promiseMiddleware = () => {
         }
         return false;
       }
-    }
-  }
+    };
+  };
 };
-const middlewares = [ promiseMiddleware, sagaMiddleware];
+const middlewares = [promiseMiddleware, sagaMiddleware];
 
 // 开发者工具
 let devtools;
@@ -527,9 +515,4 @@ for (const model of modelsEx) {
 // 扩展 store - 用于保存异步 reduxs
 store.asyncReducers = {};
 
-export {
-  store,
-  removeModel,
-  addAsyncModel,
-  patchHistory as history,
-}
+export { store, removeModel, addAsyncModel, patchHistory as history };
